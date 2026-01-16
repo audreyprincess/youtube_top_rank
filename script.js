@@ -15,8 +15,7 @@ const elements = {
     regionSelect: null,
     topCount: null,
     loadBtn: null,
-    videoList: null,
-    logoInput: null
+    videoList: null
 };
 
 // Formatting utilities
@@ -33,7 +32,6 @@ function init() {
     elements.topCount = document.getElementById('topCount');
     elements.loadBtn = document.getElementById('loadBtn');
     elements.videoList = document.getElementById('videoList');
-    elements.logoInput = document.getElementById('logoInput');
 
     const urlParams = new URLSearchParams(window.location.search);
     const isSetupMode = urlParams.get('setup') === 'true';
@@ -44,73 +42,58 @@ function init() {
         state.apiKey = savedApiKey;
     }
 
-    // 2. UI 구성: setup 모드이거나 키가 없을 때만 관리자 창 노출
+    // 2. UI 구성: setup 모드에서만 관리자 창 노출
     if (isSetupMode) {
         elements.adminControls.classList.remove('hidden');
         if (state.apiKey) {
-            elements.apiKeyInput.value = state.apiKey; // 기존 키 표시
+            elements.apiKeyInput.value = state.apiKey;
         }
     }
 
-    // 3. 데이터 로드 로직
+    // 3. 초기 데이터 로드
     if (state.apiKey) {
         fetchData();
-    } else if (!isSetupMode) {
+    } else {
         elements.videoList.innerHTML = `
             <div class="loading-state">
-                <p>🔥 Real-time YouTube Top Videos!</p>
-                <p><a href="?setup=true" style="color: #ff0000; font-weight: bold; text-decoration: none;">[Click here to enter API Key to start]</a></p>
+                <p>👋 Welcome! To start viewing top videos:</p>
+                <p><a href="?setup=true" style="color: #ff0000; font-weight: bold;">[Click here to enter your YouTube API Key]</a></p>
             </div>
         `;
     }
 
     // Event Listeners
-    if (elements.saveKeyBtn) elements.saveKeyBtn.addEventListener('click', saveSetup);
-    if (elements.loadBtn) elements.loadBtn.addEventListener('click', fetchData);
-    if (elements.regionSelect) elements.regionSelect.addEventListener('change', handleRegionChange);
-    if (elements.topCount) elements.topCount.addEventListener('change', handleCountChange);
+    elements.saveKeyBtn.addEventListener('click', saveSetup);
+    elements.loadBtn.addEventListener('click', fetchData);
+    elements.regionSelect.addEventListener('change', (e) => {
+        state.regionCode = e.target.value;
+        if (state.apiKey) fetchData();
+    });
+    elements.topCount.addEventListener('change', (e) => {
+        state.maxResults = Math.min(Math.max(parseInt(e.target.value) || 10, 10), 50);
+        elements.topCount.value = state.maxResults;
+        if (state.apiKey) fetchData();
+    });
 }
 
-// API 키 및 설정 저장 (localStorage 활용)
 function saveSetup() {
     const key = elements.apiKeyInput.value.trim();
-    
-    if (key.length === 0) {
-        alert('❌ Please enter your YouTube Data API Key');
+    if (!key) {
+        alert('Please enter an API Key');
         return;
     }
-
-    // 보안을 위해 브라우저 로컬 저장소에 보관 (서버가 없으므로 최선의 방법)
     localStorage.setItem('youtubeApiKey', key);
-    state.apiKey = key;
-    
-    alert('✅ API Key saved locally! Loading videos...');
-    
-    // 저장 후 setup 파라미터 제거하여 깔끔한 URL로 이동
-    window.location.href = window.location.pathname;
-}
-
-function handleRegionChange(e) {
-    state.regionCode = e.target.value;
-    if (state.apiKey) fetchData();
-}
-
-function handleCountChange(e) {
-    let val = parseInt(e.target.value);
-    if (val < 10) val = 10;
-    if (val > 50) val = 50;
-    state.maxResults = val;
-    elements.topCount.value = val;
-    if (state.apiKey) fetchData();
+    alert('✅ API Key saved! Refreshing page...');
+    window.location.href = window.location.pathname; // setup 파라미터 제거
 }
 
 async function fetchData() {
     if (!state.apiKey) return;
 
-    elements.videoList.innerHTML = `<div class="loading-state">🔄 Fetching Top ${state.maxResults} videos...</div>`;
+    elements.videoList.innerHTML = `<div class="loading-state">🔄 Loading Top ${state.maxResults} videos...</div>`;
 
     try {
-        const queryParams = new URLSearchParams({
+        const params = new URLSearchParams({
             part: 'snippet,statistics',
             chart: 'mostPopular',
             regionCode: state.regionCode,
@@ -118,22 +101,19 @@ async function fetchData() {
             key: state.apiKey
         });
 
-        const response = await fetch(`${API_URL}?${queryParams}`);
-        
+        const response = await fetch(`${API_URL}?${params}`);
+        const data = await response.json();
+
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || 'API Request Failed');
+            throw new Error(data.error?.message || 'API request failed');
         }
 
-        const data = await response.json();
         renderVideos(data.items || []);
-
     } catch (error) {
-        console.error('Fetch error:', error);
         elements.videoList.innerHTML = `
-            <div class="loading-state" style="color: #e74c3c; background: #ffeaea; padding: 20px; border-radius: 8px;">
-                <strong>❌ Error:</strong> ${error.message}<br><br>
-                <small>API Key가 올바르지 않거나 할당량이 초과되었을 수 있습니다. <a href="?setup=true">설정 다시하기</a></small>
+            <div class="loading-state" style="color: #ff0000;">
+                <p>❌ Error: ${error.message}</p>
+                <p><small>키가 유효한지 또는 할당량이 남았는지 확인하세요. <a href="?setup=true">[다시 설정]</a></small></p>
             </div>
         `;
     }
@@ -145,35 +125,23 @@ function renderVideos(videos) {
         return;
     }
 
-    let html = `
-        <div class="table-header">
-            <div class="col-rank">Rank</div>
-            <div class="col-thumb">Thumbnail</div>
-            <div class="col-info">Video Info</div>
-            <div class="col-stats">Stats</div>
-        </div>
-    `;
-
+    let html = '';
     videos.forEach((video, index) => {
-        const rank = index + 1;
         const { snippet, statistics = {} } = video;
-        const viewCount = statistics.viewCount ? formatNumber(statistics.viewCount) : '0';
-        const likeCount = statistics.likeCount ? formatNumber(statistics.likeCount) : '0';
+        const viewCount = formatNumber(statistics.viewCount || 0);
+        const likeCount = formatNumber(statistics.likeCount || 0);
         const thumb = snippet.thumbnails?.medium?.url || '';
 
         html += `
-            <div class="video-item ${rank === 1 ? 'rank-1' : ''}">
-                <div class="col-rank"><span class="rank-number">#${rank}</span></div>
+            <div class="video-item ${index === 0 ? 'rank-1' : ''}">
+                <div class="col-rank"><span class="rank-number">#${index + 1}</span></div>
                 <div class="col-thumb">
-                    <div class="thumbnail-wrapper">
-                        <img src="${thumb}" alt="thumbnail" loading="lazy">
-                    </div>
+                    <div class="thumbnail-wrapper"><img src="${thumb}" loading="lazy"></div>
                 </div>
                 <div class="col-info">
                     <div class="video-info">
                         <h3><a href="https://www.youtube.com/watch?v=${video.id}" target="_blank">${snippet.title}</a></h3>
                         <p class="channel-name">${snippet.channelTitle}</p>
-                        <p class="status-item">${new Date(snippet.publishedAt).toLocaleDateString()}</p>
                     </div>
                 </div>
                 <div class="col-stats">
@@ -183,7 +151,6 @@ function renderVideos(videos) {
             </div>
         `;
     });
-
     elements.videoList.innerHTML = html;
 }
 
