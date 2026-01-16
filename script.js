@@ -17,6 +17,15 @@ const elements = {
     statusMessage: null
 };
 
+/**
+ * 1. 티스토리 부모창으로 현재 높이를 전송하는 함수 (추가됨)
+ */
+function sendHeightToParent() {
+    const height = document.documentElement.scrollHeight || document.body.scrollHeight;
+    // 티스토리(부모)에게 메시지 전송
+    window.parent.postMessage({ type: 'resize', height: height }, '*');
+}
+
 const formatNumber = (num) => {
     if (!num) return '0';
     return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(num);
@@ -53,6 +62,9 @@ function init() {
         state.maxResults = Math.min(Math.max(parseInt(e.target.value) || 10, 10), 50);
         fetchData();
     });
+
+    // 창 크기가 변할 때도 높이 다시 전송
+    window.addEventListener('resize', sendHeightToParent);
 }
 
 async function fetchData() {
@@ -64,7 +76,6 @@ async function fetchData() {
     elements.videoList.innerHTML = `<div class="loading-state">🔄 Updating from YouTube...</div>`;
 
     try {
-        // [수정됨] 서버(/api/videos)를 거치지 않고 직접 유튜브 호출
         const params = new URLSearchParams({
             part: 'snippet,statistics',
             chart: 'mostPopular',
@@ -75,7 +86,6 @@ async function fetchData() {
 
         const response = await fetch(`${API_BASE_URL}?${params}`);
         
-        // 404 HTML 에러 방지용 체크
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.error?.message || 'API Request Failed');
@@ -91,12 +101,15 @@ async function fetchData() {
                 ❌ Error: ${error.message}<br>
                 <small>API 키가 정확한지, 유튜브 할당량이 남았는지 확인하세요.</small>
             </div>`;
+        // 에러 상황에서도 높이 조절 실행
+        setTimeout(sendHeightToParent, 200);
     }
 }
 
 function renderVideos(videos) {
     if (!videos || videos.length === 0) {
         elements.videoList.innerHTML = `<div class="loading-state">No trending videos found.</div>`;
+        setTimeout(sendHeightToParent, 200);
         return;
     }
 
@@ -137,7 +150,14 @@ function renderVideos(videos) {
             </div>
         `;
     });
+    
     elements.videoList.innerHTML = html;
+
+    /**
+     * 리스트가 생성된 후 높이를 측정하여 부모(티스토리)에게 전송
+     * 이미지가 로드되는 시간을 고려하여 300ms 정도 지연 후 실행
+     */
+    setTimeout(sendHeightToParent, 300);
 }
 
 document.addEventListener('DOMContentLoaded', init);
