@@ -1,6 +1,6 @@
 const API_URL = 'https://www.googleapis.com/youtube/v3/videos';
 
-// 1. 초기 상태 설정: 기본값을 'US'로 설정
+// 1. 초기 상태: 무조건 US로 시작
 let state = {
     apiKey: '',
     regionCode: 'US', 
@@ -22,7 +22,6 @@ const formatNumber = (num) => {
 };
 
 function init() {
-    // DOM 요소 연결
     elements.apiKeyInput = document.getElementById('apiKeyInput');
     elements.saveKeyBtn = document.getElementById('saveKeyBtn');
     elements.adminControls = document.getElementById('adminControls');
@@ -31,12 +30,11 @@ function init() {
     elements.loadBtn = document.getElementById('loadBtn');
     elements.videoList = document.getElementById('videoList');
 
-    // URL 파라미터 확인
     const urlParams = new URLSearchParams(window.location.search);
     const isSetupMode = urlParams.get('setup') === 'true';
     const urlKey = urlParams.get('key');
 
-    // API 키 로드 우선순위 (URL > LocalStorage)
+    // API 키 로드 (URL 파라미터 우선)
     if (urlKey) {
         state.apiKey = urlKey;
     } else {
@@ -46,12 +44,11 @@ function init() {
         }
     }
 
-    // [중요] 화면의 선택 상자(Select) 값을 데이터 상태(US)와 강제로 일치시킴
+    // [강제 동기화] HTML 선택창의 값을 데이터 상태(US)와 일치시킴
     if (elements.regionSelect) {
         elements.regionSelect.value = state.regionCode; 
     }
 
-    // 관리자 모드 설정
     if (isSetupMode) {
         if (elements.adminControls) elements.adminControls.classList.remove('hidden');
         if (state.apiKey && elements.apiKeyInput) {
@@ -59,7 +56,7 @@ function init() {
         }
     }
 
-    // 키가 있으면 즉시 데이터 로드
+    // 즉시 실행
     if (state.apiKey) {
         fetchData();
     } else {
@@ -71,14 +68,14 @@ function init() {
         `;
     }
 
-    // 이벤트 리스너 설정
+    // 이벤트 등록
     if (elements.saveKeyBtn) elements.saveKeyBtn.addEventListener('click', saveSetup);
     if (elements.loadBtn) elements.loadBtn.addEventListener('click', fetchData);
     
     if (elements.regionSelect) {
         elements.regionSelect.addEventListener('change', (e) => {
-            state.regionCode = e.target.value; // 사용자가 변경한 국가 코드를 상태에 저장
-            if (state.apiKey) fetchData();     // 즉시 해당 국가 데이터 호출
+            state.regionCode = e.target.value;
+            fetchData();
         });
     }
     
@@ -86,7 +83,7 @@ function init() {
         elements.topCount.addEventListener('change', (e) => {
             state.maxResults = Math.min(Math.max(parseInt(e.target.value) || 10, 10), 50);
             elements.topCount.value = state.maxResults;
-            if (state.apiKey) fetchData();
+            fetchData();
         });
     }
 }
@@ -102,20 +99,16 @@ function saveSetup() {
     window.location.href = window.location.pathname;
 }
 
-/**
- * 데이터를 가져오는 핵심 함수
- */
 async function fetchData() {
     if (!state.apiKey) return;
 
-    // 현재 어떤 국가 코드로 요청하는지 화면에 표시 (디버깅 용도 포함)
     elements.videoList.innerHTML = `<div class="loading-state">🔄 Loading Top ${state.maxResults} videos for <b>${state.regionCode}</b>...</div>`;
 
     try {
         const params = new URLSearchParams({
             part: 'snippet,statistics',
             chart: 'mostPopular',
-            regionCode: state.regionCode, // 현재 상태값(US 등)을 API에 전달
+            regionCode: state.regionCode,
             maxResults: state.maxResults,
             key: state.apiKey
         });
@@ -129,23 +122,25 @@ async function fetchData() {
 
         renderVideos(data.items || []);
     } catch (error) {
-        console.error('Fetch error:', error);
-        elements.videoList.innerHTML = `
-            <div class="loading-state" style="color: #ff0000; padding: 20px;">
-                <p>❌ Error: ${error.message}</p>
-                <p><small><a href="?setup=true">[Reset Setup]</a></small></p>
-            </div>
-        `;
+        elements.videoList.innerHTML = `<div class="loading-state" style="color: #ff0000;">❌ Error: ${error.message}</div>`;
     }
 }
 
 function renderVideos(videos) {
     if (!videos || videos.length === 0) {
-        elements.videoList.innerHTML = `<div class="loading-state">No videos found for ${state.regionCode}.</div>`;
+        elements.videoList.innerHTML = `<div class="loading-state">No videos found.</div>`;
         return;
     }
 
-    let html = '';
+    let html = `
+        <div class="table-header">
+            <div class="col-rank">Rank</div>
+            <div class="col-thumb">Thumbnail</div>
+            <div class="col-info">Video Info</div>
+            <div class="col-stats">Stats</div>
+        </div>
+    `;
+
     videos.forEach((video, index) => {
         const rank = index + 1;
         const { snippet, statistics = {} } = video;
@@ -157,13 +152,12 @@ function renderVideos(videos) {
             <div class="video-item ${rank === 1 ? 'rank-1' : ''}">
                 <div class="col-rank"><span class="rank-number">#${rank}</span></div>
                 <div class="col-thumb">
-                    <div class="thumbnail-wrapper"><img src="${thumb}" alt="${snippet.title}" loading="lazy"></div>
+                    <div class="thumbnail-wrapper"><img src="${thumb}" loading="lazy"></div>
                 </div>
                 <div class="col-info">
                     <div class="video-info">
-                        <h3><a href="https://www.youtube.com/watch?v=${video.id}" target="_blank" rel="noopener">${snippet.title}</a></h3>
+                        <h3><a href="https://www.youtube.com/watch?v=${video.id}" target="_blank">${snippet.title}</a></h3>
                         <p class="channel-name">${snippet.channelTitle}</p>
-                        <p class="status-item">${new Date(snippet.publishedAt).toLocaleDateString()}</p>
                     </div>
                 </div>
                 <div class="col-stats">
@@ -174,15 +168,7 @@ function renderVideos(videos) {
         `;
     });
 
-    const headerHtml = `
-        <div class="table-header">
-            <div class="col-rank">Rank</div>
-            <div class="col-thumb">Thumbnail</div>
-            <div class="col-info">Video Info</div>
-            <div class="col-stats">Stats</div>
-        </div>
-    `;
-    elements.videoList.innerHTML = headerHtml + html;
+    elements.videoList.innerHTML = html;
 }
 
 document.addEventListener('DOMContentLoaded', init);
