@@ -3,25 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Top Rankings</title>
+    <title>YouTube Real-time Global Trending</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header class="app-header">
         <div class="container header-content">
-            <h1>YouTube Real-time Top 50</h1>
-            <div id="adminControls" class="admin-controls hidden">
-                <input type="password" id="apiKeyInput" placeholder="Enter API Key">
-                <button id="saveKeyBtn" class="btn-secondary">Save Key</button>
+            <h1>YouTube Real-time Global Trending</h1>
             </div>
-        </div>
     </header>
 
     <main class="container">
         <section class="controls-panel">
             <div class="control-group">
-                <label>Country</label>
+                <label>Target Country</label>
                 <select id="regionSelect">
                     <option value="US" selected>United States (US)</option>
                     <option value="KR">South Korea (KR)</option>
@@ -34,17 +30,17 @@
                 </select>
             </div>
             <div class="control-group">
-                <label>Count</label>
+                <label>Display Count</label>
                 <input type="number" id="topCount" value="50" min="10" max="50">
             </div>
-            <button id="loadBtn" class="btn-primary">Reload</button>
+            <button id="loadBtn" class="btn-primary">Refresh Now</button>
         </section>
 
         <div id="statusMessage" class="status-bar"></div>
 
         <section class="video-rank-section">
             <div id="videoList" class="video-list">
-                <div class="loading-state">잠시만 기다려주세요...</div>
+                <div class="loading-state">데이터를 불러오는 중입니다...</div>
             </div>
         </section>
     </main>
