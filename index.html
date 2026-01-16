@@ -10,7 +10,7 @@
 <body>
     <header class="app-header">
         <div class="container header-content">
-            <h1>YouTube Top Videos</h1>
+            <h1>YouTube Real-time Top 50</h1>
             <div id="adminControls" class="admin-controls hidden">
                 <input type="password" id="apiKeyInput" placeholder="Enter API Key">
                 <button id="saveKeyBtn" class="btn-secondary">Save Key</button>
@@ -27,6 +27,10 @@
                     <option value="KR">South Korea (KR)</option>
                     <option value="JP">Japan (JP)</option>
                     <option value="GB">United Kingdom (GB)</option>
+                    <option value="DE">Germany (DE)</option>
+                    <option value="FR">France (FR)</option>
+                    <option value="IN">India (IN)</option>
+                    <option value="BR">Brazil (BR)</option>
                 </select>
             </div>
             <div class="control-group">
@@ -36,9 +40,11 @@
             <button id="loadBtn" class="btn-primary">Reload</button>
         </section>
 
+        <div id="statusMessage" class="status-bar"></div>
+
         <section class="video-rank-section">
             <div id="videoList" class="video-list">
-                <div class="loading-state">Loading...</div>
+                <div class="loading-state">잠시만 기다려주세요...</div>
             </div>
         </section>
     </main>
