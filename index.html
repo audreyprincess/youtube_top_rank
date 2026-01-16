@@ -1,28 +1,19 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Top Videos by Country</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>YouTube Top Rankings</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
     <header class="app-header">
         <div class="container header-content">
-            <h1>YouTube Top Videos by Country</h1>
-            <div id="logoContainer" class="logo-container"></div>
+            <h1>YouTube Top Videos</h1>
             <div id="adminControls" class="admin-controls hidden">
-                <input type="password" id="apiKeyInput" placeholder="Enter YouTube Data API Key" />
+                <input type="password" id="apiKeyInput" placeholder="Enter API Key">
                 <button id="saveKeyBtn" class="btn-secondary">Save Key</button>
-                <div class="logo-upload">
-                    <label for="logoInput" class="btn-secondary">Upload Logo</label>
-                    <input type="file" id="logoInput" accept="image/*" hidden />
-                </div>
             </div>
         </div>
     </header>
@@ -30,54 +21,27 @@
     <main class="container">
         <section class="controls-panel">
             <div class="control-group">
-                <label for="regionSelect">Country</label>
+                <label>Country</label>
                 <select id="regionSelect">
-                    <option value="US" selected>United States (US)</option>
-                    <option value="KR">South Korea (KR)</option>
+                    <option value="US">United States (US)</option>
+                    <option value="KR" selected>South Korea (KR)</option>
                     <option value="JP">Japan (JP)</option>
                     <option value="GB">United Kingdom (GB)</option>
-                    <option value="DE">Germany (DE)</option>
-                    <option value="FR">France (FR)</option>
-                    <option value="IN">India (IN)</option>
-                    <option value="BR">Brazil (BR)</option>
-                    <option value="CA">Canada (CA)</option>
-                    <option value="RU">Russia (RU)</option>
-                    <option value="AU">Australia (AU)</option>
-                    <option value="MX">Mexico (MX)</option>
-                    <option value="ID">Indonesia (ID)</option>
-                    <option value="TR">Turkey (TR)</option>
-                    <option value="VN">Vietnam (VN)</option>
-                    <option value="PH">Philippines (PH)</option>
-                    <option value="TH">Thailand (TH)</option>
-                    <option value="SA">Saudi Arabia (SA)</option>
-                    <option value="ES">Spain (ES)</option>
-                    <option value="IT">Italy (IT)</option>
                 </select>
             </div>
-
             <div class="control-group">
-                <label for="topCount">Count</label>
+                <label>Count</label>
                 <input type="number" id="topCount" value="50" min="10" max="50">
             </div>
-
             <button id="loadBtn" class="btn-primary">Reload</button>
         </section>
 
         <section class="video-rank-section">
-            <div class="table-header">
-                <div class="col-rank">Rank</div>
-                <div class="col-thumb">Thumbnail</div>
-                <div class="col-info">Video Info</div>
-                <div class="col-stats">Stats</div>
-            </div>
             <div id="videoList" class="video-list">
-                <!-- Video items will be populated here -->
-                <div class="loading-state">Click Reload to fetch data...</div>
+                <div class="loading-state">Loading...</div>
             </div>
         </section>
     </main>
-
     <script src="script.js"></script>
 </body>
-
 </html>
